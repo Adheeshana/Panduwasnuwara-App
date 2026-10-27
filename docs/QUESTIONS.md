@@ -13,20 +13,20 @@ Items the SRS does not settle. Behaviour was **not** invented in application cod
 
 ## Schema / seed (this step)
 
-7. **Official Sinhala category titles.** §7 gives English names and mixed keywords. Seed `name_si` values are derived from those keywords, not an official list.
-8. **Official village list and centre points.** Seed uses five sample villages (Hettipola, Pallegama, Rambadagalla, Moragane, Kadahapola) with approximate coordinates. Replace with the DS office list.
-9. **Local emergency numbers** (police station, hospital, ASP, etc.) are not in the SRS. Seed includes only the national numbers 119, 1990, 110.
-10. **NIC hash pepper.** Uniqueness is SHA-256 of the normalised NIC, no secret. Should hashes be HMAC’d with a server secret?
-11. **Re-using an NIC after account deletion.** `nic_hashes` is never deleted, so a NIC cannot be registered again even if the old account was not blocked. §5.4 only says to keep the hash so a **blocked** NIC stays blocked.
-12. **NIC day-of-year on non-leap years.** §5.3 counts every year as 366 days (29 Feb). `date` cannot store 29 Feb in a non-leap year; parse uses `1 Jan + (day − 1)` (so day 60 is 1 Mar in non-leap years). Confirm.
-13. **Price-change limit grain.** §6.3 does not say whether Daily/Weekly/Monthly/Occasional limits are per listing, per price item, or per save. `price_change_within_limit` counts **applied** rows per **listing** in the window.
+7. **Resolved:** Keep the sample Sinhala category titles and keywords for now; the official list comes later.
+8. **Resolved:** Keep the sample village list and approximate centre points for now; the DS office list comes later.
+9. **Resolved:** Leave local emergency numbers empty; the super admin adds them from the admin panel. Seed contains only national numbers.
+10. **Resolved:** NIC uniqueness uses HMAC-SHA-256 with the Supabase Vault secret `nic_hash_pepper`; it is never stored in git or seed data.
+11. **Resolved:** Delete the readable NIC record with the account but retain its hash. The same NIC may register again after deletion unless that hash is blocked.
+12. **Resolved:** Reject day 60 for a NIC year that is not a leap year.
+13. **Resolved:** Count one price-list save as one change per listing, regardless of the number of changed items.
 14. **Weekly public-notice limit default** when creating an officer (`officer_positions.weekly_public_limit` is nullable).
 15. **Home-based listing coordinates.** Direct `SELECT` on `listings` is not granted to ordinary users (would leak the pin). Browse goes through `listings_browse` and `search_listings()`, which null the point when `show_location` is false.
-16. **Promotion banners vs consent.** Push follows `promo_consent`; whether a home-screen banner may show without consent is not stated. RLS currently shows targeted active promotions to matching users regardless of consent.
+16. **Resolved:** Home-screen banners show to all targeted users; push notifications require `promo_consent = true`.
 17. **Village change and Auto subscriptions.** New Auto positions of the new village are added. Old subscriptions are left (user can unsubscribe). Not specified whether old Auto subs should be removed.
 18. **Review interval (30 days)** and **notice edit window (1 hour)** are rules, not marked *(setting)*. They are not in `app_settings` yet.
 19. **Minimum age 16** is a product rule, not a setting; `is_age_at_least_16` hard-codes 16 years.
-20. **PGroonga on hosted Supabase.** Local Docker images and some hosted regions do not ship PGroonga. Migrations require it as specified in §2. Confirm the target project can `CREATE EXTENSION pgroonga`.
+20. **Resolved:** PGroonga is available on the target hosted Supabase project and remains required.
 21. **Chat encryption at rest.** Relies on Postgres/Supabase disk encryption; no extra column-level encryption.
 22. **Category icon keys** in seed (`scissors`, `hammer`, …) are placeholders until the icon set is chosen.
 23. **Staff list visibility.** Admins cannot read the full `staff` table (only their own row). Owner/super admin can. Confirm admins should not see other admins.

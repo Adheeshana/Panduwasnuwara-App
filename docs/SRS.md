@@ -103,7 +103,7 @@ There is **one** verification for a person. It is based on the NIC and checked b
 1. Before asking for the NIC, show a screen explaining why it is needed and who will see it.
 2. User enters the **NIC number only** (no photos).
 3. App parses the NIC (§5.3) and checks that **birth date and gender match** the sign-up details. On mismatch, show an error and a "Contact App Team" option; do not submit.
-4. Check the NIC is not already used by another account (**one NIC = one account**). Store a hash for the uniqueness check.
+4. Check the NIC is not already used by another account (**one NIC = one account**). Store an HMAC-SHA-256 hash using the Supabase Vault secret `nic_hash_pepper`; the secret is never stored in git or seed data.
 5. A verification request is created. Anyone allowed (below) can decide it.
 
 **What the GN sees** in the request: **name, NIC number, birth date, village. Nothing else.** (A GN may have many villages and many people with the same name — these four fields are enough to identify the person.)
@@ -129,6 +129,7 @@ There is **one** verification for a person. It is based on the NIC and checked b
 - **New format:** 12 digits (e.g. `198534000937`). Year = digits 1–4. Day number = digits 5–7.
 - If day number > 500 → **female**, subtract 500. Otherwise male.
 - Day number counts every year as having 366 days (February always has 29) — convert to a date accordingly.
+- Day 60 (29 February) is invalid when the NIC year is not a leap year.
 - Reject impossible values (day 0, day > 366 after adjustment, wrong length/characters).
 
 ### 5.4 Account rules
@@ -143,7 +144,7 @@ There is **one** verification for a person. It is based on the NIC and checked b
 | Profile, phone, village | Deleted |
 | Reviews written | Kept, shown as "Deleted user" |
 | Provider listings and photos | Deleted |
-| NIC record | Deleted (keep only the hash, so a blocked NIC stays blocked) |
+| NIC record | Deleted (keep only the HMAC hash, so a blocked NIC stays blocked) |
 | Counselling chats | Deleted |
 | Subscriptions | Removed |
 
@@ -179,7 +180,7 @@ Example: Nimal has a "Cake shop" listing in Food (approved by PHI → blue tick)
 ### 6.3 Prices
 - A price stays until the provider changes it. **Prices never expire and are never greyed out.**
 - **"Updated Xh ago" label:** shown **only** for listings with **Daily** frequency, and **only for 23 hours** after the update (e.g. "Pol 1 – Rs. 140 · Updated 5h ago"). After 23 hours, no label; the price simply stays. Weekly/Monthly/Occasional listings never show the label.
-- Change limits *(settings)*: **Daily** 1 change per day · **Weekly** 2 per week · **Monthly** 2 per month · **Occasional** 2 per month.
+- Change limits *(settings)*: **Daily** 1 change per day · **Weekly** 2 per week · **Monthly** 2 per month · **Occasional** 2 per month. A single save of a listing's price list counts as one change, regardless of how many items changed.
 - A change beyond the limit goes to admin approval; users keep seeing the old price until approved.
 - Every price change is logged; owner and super admin see the history on the provider page.
 
@@ -349,7 +350,7 @@ Only a service the provider confirms can be reviewed.
 |---|---|
 | Job title, age range (e.g. 20–45), gender (male/female/any), pay (e.g. 8 hours, Rs. 3,000), place | Benefits (e.g. travel free, 2 meals), Contact button |
 
-**Promotions.** A business contacts the office; super admin builds the promotion in the panel and targets villages, age and gender. Push goes only to users who ticked promotions consent and is labelled "Promotion"; can also run as a home-screen banner. Payment handled offline.
+**Promotions.** A business contacts the office; super admin builds the promotion in the panel and targets villages, age and gender. Push goes only to users who ticked promotions consent and is labelled "Promotion"; the home-screen banner is shown to all targeted users regardless of promotions consent. Payment handled offline.
 
 **Emergency.** A red button on every screen lists:
 - National: **119** police, **1990** Suwa Seriya ambulance, **110** fire.
